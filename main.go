@@ -22,20 +22,20 @@ func main() {
 	}
 
 	game := Make_empty_game(
-		    "haico" +
-			"psrrn" +
-			"msdsz" +
-			"betpp" +
-			"neoor",
+		    "cszim" +
+			"zrcur" +
+			"aaaeb" +
+			"pbsai" +
+			"isuer",
 			"     " +
-			"     " +
-			"     " +
-			"     " +
-			"     ")
+			" r  r" +
+			"    r" +
+			"  rrr" +
+			"   rr")
 
 
 	best_evaluation, best_move, best_word, nb_moves := game.search(2) // at depth 1 and empty game, it should simply be the first proposal
-	fmt.Println(game.possible_words[:20])
+	fmt.Println(game.possible_words[:50])
 	fmt.Println(game.String())
 	fmt.Println(best_move)
 	game.state.play(best_move, best_word, BLUE)

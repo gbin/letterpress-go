@@ -121,7 +121,7 @@ func (game *Game) min_value(state *GameState, alpha int, beta int, depth int, ma
 func (game *Game) search(max_depth int) (best_evaluation int, best_move []int, best_word *signedword, nb_moves int) {
 	fmt.Println("Start searching for ", string(game.board[:]), "/", string(game.state.mask[:]))
 	game.sort_possible_words_by_letter_subset(game.interesting_letterset())
-	fmt.Println(game.possible_words[:20])
+	fmt.Println(game.possible_words[:50])
 	best_evaluation, best_move, best_word, nb_moves = game.max_value(&game.state, -INFINITY, INFINITY, 0, max_depth)
 	fmt.Println("-- RESULT --\nBest word:", string(best_word.word), "Eval:", best_evaluation)
 	return best_evaluation, best_move, best_word, nb_moves

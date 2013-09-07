@@ -87,17 +87,16 @@ func (b BestmatchSignedWords) Less(i, j int) bool {
 }
 
 func Make_empty_game(board_str string, mask_str string) *Game {
-	var game Game
-	game.board = make_board(board_str)
+    game := Game{board:make_board(board_str)}
 
-	if len(mask_str) == 0 {
+	if mask_str == "" {
 		game.state.mask.Zap()
 	} else {
 		game.state.mask = make_mask(mask_str)
 	}
 
-	var possible_moves wordlist = ReadWords()
-	var possible_signed_words []signedword = make([]signedword,0, len(possible_moves))
+    possible_moves := ReadWords()
+    possible_signed_words := make([]signedword,0, len(possible_moves))
 	for _, word := range all_possible_moves(game.board, possible_moves) {
 		var signedword signedword
 		signedword.word = word
