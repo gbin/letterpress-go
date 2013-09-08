@@ -1,39 +1,28 @@
 package main
 
 import (
-	"fmt"
-    "flag"
-	"runtime/pprof"
-	"log"
 	"os"
+
+	"fmt"
+	"log"
 )
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-
 func main() {
-	flag.Parse()
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
+
+	if len(os.Args) != 2 {
+		log.Fatalf("letterpress-go <game.txt>")
+		os.Exit(-1)
 	}
-
-	game := Make_empty_game(
-		    "cszim" +
-			"zrcur" +
-			"aaaeb" +
-			"pbsai" +
-			"isuer",
-			"     " +
-			" r  r" +
-			"    r" +
-			"  rrr" +
-			"   rr")
-
-
+	file, err := os.Open(os.Args[1])
+	if err != nil {
+		log.Fatalf("Could not open %q", os.Args[1])
+		os.Exit(-1)
+	}
+	defer file.Close()
+	game, err := readGame(file)
+	if err != nil {
+		log.Fatalf("Could not initialize the game %v", err)
+	}
 	best_evaluation, best_move, best_word, nb_moves := game.search(2) // at depth 1 and empty game, it should simply be the first proposal
 	fmt.Println(game.possible_words[:50])
 	fmt.Println(game.String())

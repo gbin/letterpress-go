@@ -6,7 +6,7 @@ import (
 )
 
 const INFINITY = 1000000
-const MAX_WORD_CUTOFF = INFINITY
+const MAX_WORD_CUTOFF = 15
 
 func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, max_depth int) (best_evaluation int, best_move []int, best_word *signedword, nb_moves int) {
 	if depth >= max_depth {
@@ -18,7 +18,7 @@ func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, ma
 	var wi worditerator
 	var last_nb_moves int
 	timestampFloat := time.Now().UnixNano()
-	var nb_words int
+	nb_words := 0
 	for current_signedword = wi.Begin(game, state); current_signedword != nil; current_signedword = wi.Next() {
 		nb_words++
 		if nb_words > MAX_WORD_CUTOFF {
@@ -31,18 +31,18 @@ func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, ma
 			new_state := *state
 			new_state.play(current_move, current_signedword, BLUE)
 
-			if (new_state.is_finished()) {
+			if new_state.is_finished() {
 				eval = new_state.evaluate()
 				new_nb_moves = 1
 				//fmt.Println("FINISHED BLUE", eval, current_move, best_move)
 			} else {
-				eval, _, _, new_nb_moves = game.min_value(&new_state, alpha, beta, depth + 1, max_depth)
+				eval, _, _, new_nb_moves = game.min_value(&new_state, alpha, beta, depth+1, max_depth)
 			}
 			nb_moves += new_nb_moves + 1
 			if best_evaluation < eval {
 				best_evaluation = eval
 				best_move = make([]int, len(current_move))
-				for index, chr := range(current_move) {
+				for index, chr := range current_move {
 					best_move[index] = chr
 				}
 				best_word = current_signedword
@@ -55,13 +55,12 @@ func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, ma
 				alpha = best_evaluation
 			}
 		}
-		if (depth == 0) {
+		if depth == 0 {
 			new_ts := time.Now().UnixNano()
-			word_per_seconds := (int64(nb_moves - last_nb_moves)*1000000000)/((new_ts - timestampFloat))
+			word_per_seconds := (int64(nb_moves-last_nb_moves) * 1000000000) / (new_ts - timestampFloat)
 			fmt.Println("Best Eval", best_evaluation, "Best Word", best_word.word, "move", best_move, "     |  Current word", string(current_signedword.word), nb_moves, "Speed ", word_per_seconds)
 			last_nb_moves = nb_moves
 		}
-
 
 	}
 	return
@@ -89,18 +88,18 @@ func (game *Game) min_value(state *GameState, alpha int, beta int, depth int, ma
 			var eval, new_nb_moves int
 			new_state := *state
 			new_state.play(current_move, current_signedword, RED)
-			if (new_state.is_finished()) {
+			if new_state.is_finished() {
 				eval = new_state.evaluate()
 				new_nb_moves = 1
 				//fmt.Println("FINISHED RED", eval)
 			} else {
-				eval, _, _, new_nb_moves = game.max_value(&new_state, alpha, beta, depth + 1, max_depth)
+				eval, _, _, new_nb_moves = game.max_value(&new_state, alpha, beta, depth+1, max_depth)
 			}
 			nb_moves += new_nb_moves + 1
 			if best_evaluation > eval {
 				best_evaluation = eval
 				best_move = make([]int, len(current_move))
-				for index, chr := range(current_move) {
+				for index, chr := range current_move {
 					best_move[index] = chr
 				}
 				best_word = current_signedword
@@ -113,14 +112,17 @@ func (game *Game) min_value(state *GameState, alpha int, beta int, depth int, ma
 			}
 		}
 		// fmt.Println("Moves evaluated for word ", string(current_signedword.word), nb_moves_for_this_word)
+		if depth == 1 {
+			fmt.Println("    SubBest Eval", best_evaluation, "Best Word", best_word.word, "move", best_move, "     |  Current word", string(current_signedword.word))
+		}
 
 	}
 	return best_evaluation, best_move, best_word, nb_moves
 }
 
 func (game *Game) search(max_depth int) (best_evaluation int, best_move []int, best_word *signedword, nb_moves int) {
-	fmt.Println("Start searching for ", string(game.board[:]), "/", string(game.state.mask[:]))
-	game.sort_possible_words_by_letter_subset(game.interesting_letterset())
+	fmt.Printf("Start \n%v\n", game)
+	game.sort_possible_words_by_letter_subsets(game.unused_letterset(), game.interesting_letterset(BLUE))
 	fmt.Println(game.possible_words[:50])
 	best_evaluation, best_move, best_word, nb_moves = game.max_value(&game.state, -INFINITY, INFINITY, 0, max_depth)
 	fmt.Println("-- RESULT --\nBest word:", string(best_word.word), "Eval:", best_evaluation)

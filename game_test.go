@@ -1,12 +1,14 @@
 package main
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
+var empty []string = make([]string, 0)
+
 func TestGameCreation(t *testing.T) {
-	var game *Game = Make_empty_game("abcdeabcdeabcdeabcdeabcde", "")
+	game, _ := Make_empty_game("abcdeabcdeabcdeabcdeabcde", "", empty)
 	if game.state.mask[12] != EMPTY {
 		fmt.Println(game.state.mask)
 		t.Errorf("mask should be empty")
@@ -17,22 +19,28 @@ func TestGameCreation(t *testing.T) {
 	}
 }
 
-
 func TestBestSubset(t *testing.T) {
-	var game *Game = Make_empty_game("abcdeabcdeabcdeabcdeabcjy", "")
-	if string(game.possible_words[0].word) != "deejayed" || string(game.possible_words[1].word) != "acceded" {
-		t.Errorf("Should have start by deejayed and game acceded ")
+	game, _ := Make_empty_game("abcdeabcdeabcdeabcdeabcjy", "", empty)
+	found := false
+	for _, sword := range game.possible_words {
+		if string(sword.word) == "deejayed" {
+			found = true
+			break
+		}
 	}
-	game.sort_possible_words_by_letter_subset(word("cjy"))
+	if !found {
+		t.Errorf("Should have found deejayed in the list")
+	}
+	game.sort_possible_words_by_letter_subsets(word(""), word("cjy"))
 	if string(game.possible_words[0].word) != "jaycee" || string(game.possible_words[1].word) != "deejayed" {
 		t.Errorf("game not initialized correctly")
 	}
 }
 
 func TestInterestingLetterset(t *testing.T) {
-	var game *Game = Make_empty_game("abcxxdexxxfxxxxxxxxxxxxxx", "rrrr rrr  rr   r         ")
-	r := game.interesting_letterset()
-	if r[0] != 'x' || len(r) != 1 {
+	game, _ := Make_empty_game("abcxxdexxxfxxxxxxxxxxxxxx", "rrrr rrr  rr   r         ", empty)
+	r := game.interesting_letterset(BLUE)
+	if r[0] != 'x' {
 		t.Errorf("something is wrong")
 	}
 }
@@ -40,21 +48,21 @@ func TestInterestingLetterset(t *testing.T) {
 func TestEvaluation(t *testing.T) {
 	var state GameState
 	state.mask = make_mask("rrrr " +
-			"rrr  " +
-			"rr   " +
-			"r    " +
-			"     ")
+		"rrr  " +
+		"rr   " +
+		"r    " +
+		"     ")
 	if state.evaluate() != -16 {
 		t.Errorf("something is wrong in eval")
 	}
 }
 
 func TestWordGen(t *testing.T) {
-	var game *Game = Make_empty_game("abcdeabcdeabcdeabcdeabcjy", "")
+	game, _ := Make_empty_game("abcdeabcdeabcdeabcdeabcjy", "", empty)
 	var state GameState
 	state.played_moves = make([]signedword, 0)
 
-	sw1, sw2, sw3 := game.possible_words[0],game.possible_words[1],game.possible_words[2]
+	sw1, sw2, sw3 := game.possible_words[0], game.possible_words[1], game.possible_words[2]
 
 	state.played_moves = append(state.played_moves, sw2)
 	var wi worditerator
