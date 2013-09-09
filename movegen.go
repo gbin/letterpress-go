@@ -19,6 +19,8 @@ type wordlist []word
 type lettercount [26]int8
 type wordsig int64
 
+type move []int
+
 // this is by probability of finding *at least* this letter in the words
 // var letters_order [26]byte =[26]byte{'e', 's', 'i', 'a', 'r', 'n', 't', 'o', 'l', 'c', 'u', 'd', 'p', 'm', 'g', 'h', 'b', 'y', 'f', 'v', 'k', 'w', 'z', 'x', 'q', 'j'}
 // var primes [26]int = [26]int{ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101 }
@@ -38,6 +40,9 @@ func (s *mask) Zap() {
 }
 
 func (mask *mask) vicinity_same_color(color byte, index int) bool {
+	if mask[index] == EMPTY {
+		return false
+	}
 	x, y := index%SIZE, index/SIZE
 	if x == 0 {
 		if y == 0 {
@@ -164,7 +169,7 @@ func is_mask_in_list(to_test *mask, list []mask) bool {
 	return false
 }
 
-func find_chr_indices(chr byte, in []byte) []int {
+func find_chr_indices(chr byte, in []byte) move {
 	var result = make([]int, 0, len(in))
 	for index, otherchr := range in {
 		if chr == otherchr {
@@ -177,7 +182,7 @@ func find_chr_indices(chr byte, in []byte) []int {
 type moveiterator struct {
 	letter_positions [][]int
 	current_state    []int
-	current_move     []int
+	current_move     move
 }
 
 func (mi *moveiterator) update() bool {
@@ -194,7 +199,7 @@ func (mi *moveiterator) update() bool {
 	return true
 }
 
-func (mi *moveiterator) Begin(board *board, word word) []int {
+func (mi *moveiterator) Begin(board *board, word word) move {
 	l := len(word)
 	mi.letter_positions = make([][]int, l, l)
 	mi.current_state = make([]int, l, l)
@@ -211,7 +216,7 @@ func (mi *moveiterator) Begin(board *board, word word) []int {
 	return mi.Next()
 }
 
-func (mi *moveiterator) Next() []int {
+func (mi *moveiterator) Next() move {
 	right := len(mi.current_state) - 1
 
 	for i := right; i >= 0; i-- {

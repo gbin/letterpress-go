@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
+
 	"sort"
 )
 
 func ReadWords() (wordlist, error) {
-
 	f, err := os.Open("word_cache.txt")
 	if err != nil {
 		return nil, err
@@ -140,15 +141,21 @@ func readGame(r io.Reader) (*Game, error) {
 	for s.Scan() {
 		played = append(played, s.Text())
 	}
+	log.Printf("List of played words from file %q", played)
 	return Make_empty_game(boardStr, maskStr, played)
+}
+
+func inStrings(word string, within []string) bool {
+	for _, w := range within {
+		if w == word {
+			return true
+		}
+	}
+	return false
 }
 
 func Make_empty_game(board_str string, mask_str string, played_moves_str []string) (*Game, error) {
 	game := &Game{board: make_board(board_str)}
-	played_moves := make([]word, len(played_moves_str))
-	for i := range played_moves_str {
-		played_moves[i] = []byte(played_moves_str[i])
-	}
 
 	if mask_str == "" {
 		game.state.mask.Zap()
@@ -160,11 +167,14 @@ func Make_empty_game(board_str string, mask_str string, played_moves_str []strin
 	if err != nil {
 		return nil, err
 	}
-	possible_signed_words := make([]signedword, 0, len(possible_moves))
 	for _, word := range filter_out_subwords(all_possible_moves(game.board, possible_moves)) {
-		possible_signed_words = append(possible_signed_words, signedword{word, calculate_word_signature(word)})
+		sw := signedword{word, calculate_word_signature(word)}
+		game.possible_words = append(game.possible_words, sw)
+		fmt.Printf("word %q ", string(word))
+		if inStrings(string(word), played_moves_str) {
+			game.state.played_moves = append(game.state.played_moves, sw)
+		}
 	}
-	game.possible_words = possible_signed_words
 	return game, err
 }
 
@@ -243,8 +253,8 @@ already_played:
 }
 
 func (state *GameState) is_finished() bool {
-	for index := range state.mask {
-		if state.mask[index] == EMPTY {
+	for _, color := range state.mask {
+		if color == EMPTY {
 			return false
 		}
 	}
@@ -277,7 +287,7 @@ func (state *GameState) evaluate() int {
 	return total
 }
 
-func (state *GameState) play(move []int, signed_word *signedword, color byte) {
+func (state *GameState) play(move move, signed_word *signedword, color byte) {
 	var othercolor byte
 	if color == BLUE {
 		othercolor = RED
@@ -291,5 +301,47 @@ func (state *GameState) play(move []int, signed_word *signedword, color byte) {
 		}
 	}
 	state.played_moves = append(state.played_moves, *signed_word)
+}
 
+func (g *Game) showMove(m move) string {
+	result := "\x1b[0m\x1b[30m"
+	for i, color := range g.state.mask {
+		if i%5 == 0 {
+			result += "\n"
+		}
+		intense := color != EMPTY && g.state.mask.vicinity_same_color(color, i)
+		switch color {
+		case RED:
+			if intense {
+				result += "\x1b[48;5;196m"
+			} else {
+				result += "\x1b[48;5;203m"
+			}
+		case BLUE:
+			if intense {
+				result += "\x1b[48;5;21m"
+			} else {
+				result += "\x1b[48;5;62m"
+			}
+		default:
+			result += "\x1b[48;5;248m"
+		}
+
+		inMove := false
+		for _, index := range m {
+			if index == i {
+				inMove = true
+				break
+			}
+		}
+		if inMove {
+			result += "\x1b[37m"
+		} else {
+			result += "\x1b[30m"
+		}
+		result += string(g.board[i])
+	}
+	result += "\x1b[0m\n"
+	result += fmt.Sprintf("%v", g.state.played_moves)
+	return result
 }

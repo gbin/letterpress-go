@@ -6,7 +6,7 @@ import (
 )
 
 const INFINITY = 1000000
-const MAX_WORD_CUTOFF = 15
+const MAX_WORD_CUTOFF = INFINITY
 
 func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, max_depth int) (best_evaluation int, best_move []int, best_word *signedword, nb_moves int) {
 	if depth >= max_depth {
@@ -34,7 +34,7 @@ func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, ma
 			if new_state.is_finished() {
 				eval = new_state.evaluate()
 				new_nb_moves = 1
-				//fmt.Println("FINISHED BLUE", eval, current_move, best_move)
+				// fmt.Println("FINISHED BLUE", eval, current_move, best_move)
 			} else {
 				eval, _, _, new_nb_moves = game.min_value(&new_state, alpha, beta, depth+1, max_depth)
 			}
@@ -111,19 +111,15 @@ func (game *Game) min_value(state *GameState, alpha int, beta int, depth int, ma
 				beta = best_evaluation
 			}
 		}
-		// fmt.Println("Moves evaluated for word ", string(current_signedword.word), nb_moves_for_this_word)
-		if depth == 1 {
-			fmt.Println("    SubBest Eval", best_evaluation, "Best Word", best_word.word, "move", best_move, "     |  Current word", string(current_signedword.word))
-		}
 
 	}
 	return best_evaluation, best_move, best_word, nb_moves
 }
 
-func (game *Game) search(max_depth int) (best_evaluation int, best_move []int, best_word *signedword, nb_moves int) {
+func (game *Game) search(max_depth int) (best_evaluation int, best_move move, best_word *signedword, nb_moves int) {
 	fmt.Printf("Start \n%v\n", game)
 	game.sort_possible_words_by_letter_subsets(game.unused_letterset(), game.interesting_letterset(BLUE))
-	fmt.Println(game.possible_words[:50])
+	fmt.Println(game.possible_words)
 	best_evaluation, best_move, best_word, nb_moves = game.max_value(&game.state, -INFINITY, INFINITY, 0, max_depth)
 	fmt.Println("-- RESULT --\nBest word:", string(best_word.word), "Eval:", best_evaluation)
 	return best_evaluation, best_move, best_word, nb_moves

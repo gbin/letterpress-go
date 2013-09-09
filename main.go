@@ -28,7 +28,7 @@ func main() {
 	fmt.Println(game.String())
 	fmt.Println(best_move)
 	game.state.play(best_move, best_word, BLUE)
-	fmt.Println(game.String())
+	fmt.Println(game.showMove(best_move))
 	fmt.Println("Eval: ", best_evaluation)
 	fmt.Println("Total moves analyzed: ", nb_moves)
 

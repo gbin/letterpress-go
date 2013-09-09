@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -74,6 +75,54 @@ func TestWordGen(t *testing.T) {
 	first = wi.Begin(game, &state)
 	if !first.Equal(&sw3) {
 		t.Errorf("Should have been ", sw3.word)
+	}
+
+}
+
+const g = //
+`asdqw
+zxcas
+xcvsd
+house
+dogfg
+
+rrbb.
+.....
+r.. r
+    .
+rrrrr
+
+avocados
+fougasses
+house
+`
+
+func inPlayed(w string, sw []signedword) bool {
+	for _, s := range sw {
+		if string(s.word) == w {
+			return true
+		}
+	}
+	return false
+}
+
+func TestReadFromFile(t *testing.T) {
+	sr := strings.NewReader(g)
+	game, err := readGame(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if game.board[0] != 'a' || game.board[24] != 'g' {
+		t.Errorf("board not read correctly %v", game.board)
+	}
+	if inPlayed("house", game.state.played_moves) {
+		t.Errorf("house should NOT be in played %v as it is a subword anyway", game.state.played_moves)
+	}
+	if !inPlayed("avocados", game.state.played_moves) {
+		t.Errorf("avocados should be in played %v", game.state.played_moves)
+	}
+	if !inPlayed("fougasses", game.state.played_moves) {
+		t.Errorf("fougasses should be in played %v", game.state.played_moves)
 	}
 
 }
