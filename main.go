@@ -23,13 +23,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not initialize the game %v", err)
 	}
-	best_evaluation, best_move, best_word, nb_moves := game.search(2) // at depth 1 and empty game, it should simply be the first proposal
+	best := game.search(2) // at depth 1 and empty game, it should simply be the first proposal
 	fmt.Println(game.possible_words[:50])
 	fmt.Println(game.String())
-	fmt.Println(best_move)
-	game.state.play(best_move, best_word, BLUE)
-	fmt.Println(game.showMove(best_move))
-	fmt.Println("Eval: ", best_evaluation)
-	fmt.Println("Total moves analyzed: ", nb_moves)
+	fmt.Println(best.move)
+	game.state.play(best.move, best.word, BLUE)
+	fmt.Println(game.showMove(best.move))
+	fmt.Println("Eval: ", best.eval)
+	fmt.Println("Total moves analyzed: ", best.nbMoves)
 
 }

@@ -169,9 +169,77 @@ func is_mask_in_list(to_test *mask, list []mask) bool {
 	return false
 }
 
-func find_chr_indices(chr byte, in []byte) move {
-	var result = make([]int, 0, len(in))
-	for index, otherchr := range in {
+func (b *board) first(w word) move {
+	var result = make([]int, len(w))
+	for iwletter, wletter := range w {
+	nextpos:
+		for iboard, bletter := range b {
+			if wletter == bletter {
+				for i := 0; i < iwletter; i++ { // if we already have this position, skip it
+					if result[i] == iboard {
+						continue nextpos
+					}
+				}
+				result[iwletter] = iboard
+				break
+			}
+		}
+	}
+	return result
+}
+
+func (b *board) next(m move) bool {
+	var indexToInc int
+	var nextSpot int
+
+	wlen := len(m)
+
+	for indexToInc = wlen - 1; indexToInc >= 0; indexToInc-- {
+		pos := m[indexToInc]
+		wletter := b[pos]
+
+	outer:
+		for nextSpot = pos + 1; nextSpot < LENGTH; nextSpot++ {
+			if wletter == b[nextSpot] {
+				for i := indexToInc + 1; i < wlen; i++ {
+					if m[i] == nextSpot { // if we already have this position means we cannot increment this position
+						nextSpot = LENGTH
+						break outer
+					}
+				}
+				break // this spot is free, use it as the next value
+			}
+		}
+		if nextSpot != LENGTH { // so we can increment this spot !
+			m[indexToInc] = nextSpot
+
+			// reset all the values at the right of indexToInc
+			for indexToReset := indexToInc + 1; indexToReset < wlen; indexToReset++ {
+				lastKnownGood := m[indexToReset]
+				chrToTest := b[lastKnownGood]
+			foundspot:
+				for prevSpot := lastKnownGood; prevSpot >= 0; prevSpot-- {
+					if b[prevSpot] == chrToTest {
+						for i := 0; i < indexToReset; i++ {
+							if m[i] == prevSpot { // it means we cannot reset more it hit another occupied space
+								break foundspot
+							}
+						}
+						lastKnownGood = prevSpot // this is a potential candidate if we don't find another spot on the left
+					}
+				}
+				// move it to the last known position as we finished to search left
+				m[indexToReset] = lastKnownGood // set this index to the max we could find
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func (b *board) find_chr_indices(chr byte) move {
+	var result = make([]int, 0, 5)
+	for index, otherchr := range b {
 		if chr == otherchr {
 			result = append(result, index)
 		}
@@ -186,15 +254,14 @@ type moveiterator struct {
 }
 
 func (mi *moveiterator) update() bool {
-	current_move := mi.current_move
 	for index := range mi.current_state {
-		new_indice := mi.letter_positions[index][mi.current_state[index]]
+		newIndice := mi.letter_positions[index][mi.current_state[index]]
 		for index2 := 0; index2 < index; index2++ { // check if we don't have it yet
-			if current_move[index2] == new_indice {
+			if mi.current_move[index2] == newIndice {
 				return false
 			}
 		}
-		current_move[index] = new_indice
+		mi.current_move[index] = newIndice
 	}
 	return true
 }
@@ -205,9 +272,8 @@ func (mi *moveiterator) Begin(board *board, word word) move {
 	mi.current_state = make([]int, l, l)
 	mi.current_move = make([]int, l, l)
 
-	b := board[:]
 	for index, letter := range word {
-		mi.letter_positions[index] = find_chr_indices(letter, b)
+		mi.letter_positions[index] = board.find_chr_indices(letter)
 	}
 
 	if mi.update() {

@@ -1,8 +1,6 @@
 package main
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestLetterCounter(t *testing.T) {
 	var letter_count lettercount
@@ -24,7 +22,7 @@ func TestLetterCounter(t *testing.T) {
 
 func AssertSameLists(t *testing.T, list1 wordlist, list2 wordlist) {
 	if len(list1) != len(list2) {
-		t.Error("Not the same length ", len(list1), "!=" , len(list2))
+		t.Error("Not the same length ", len(list1), "!=", len(list2))
 		return
 	}
 	for index, word := range list1 {
@@ -80,11 +78,11 @@ func TestSignatureCalculation(t *testing.T) {
 		t.Errorf("eeees signature should be 48")
 	}
 
-
 }
 
 func TestFind_chr_indices(t *testing.T) {
-	result := find_chr_indices('s', []byte{ 's', 'u', 'p', 'e', 'r', 'm', 'a', 'n', 's'})
+	board := make_board("supermans                ")
+	result := board.find_chr_indices('s')
 	if result[0] != 0 {
 		t.Errorf("should find one at the beginning")
 	}
@@ -101,5 +99,75 @@ func TestNumbermachingletters(t *testing.T) {
 	matching := number_maching_letters(wordsig, word("zorh"))
 	if matching != 3 {
 		t.Errorf("3 letters should have matched")
+	}
+}
+
+func same(t *testing.T, got, want move) {
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("got %v but wanted %v", got, want)
+			break
+		}
+	}
+}
+
+func TestWordIterator(t *testing.T) {
+	//                   0123456789012345678901234
+	board := make_board("supermansmnsupeumnesruans")
+
+	got := board.first(word("ssupsu"))
+	same(t, got, []int{0, 8, 1, 2, 11, 12})
+
+	// s positions [0, 8, 11, 19, 24]
+	// u positions [1, 12, 15, 21]
+	// p positions [2, 13]
+
+	wants := [][]int{
+		[]int{0, 8, 1, 2, 11, 15},
+		[]int{0, 8, 1, 2, 11, 21},
+		[]int{0, 8, 1, 2, 19, 12},
+		[]int{0, 8, 1, 2, 19, 15},
+		[]int{0, 8, 1, 2, 19, 21},
+		[]int{0, 8, 1, 2, 24, 12},
+		[]int{0, 8, 1, 2, 24, 15},
+		[]int{0, 8, 1, 2, 24, 21},
+		[]int{0, 8, 1, 13, 11, 12},
+	}
+
+	for _, want := range wants {
+		if !board.next(got) {
+			t.Errorf("Should have been true")
+		}
+		same(t, got, want)
+	}
+}
+
+func BenchmarkMoveIterator(b *testing.B) {
+	board := make_board("supermansmnsupeumnesruans")
+	for i := 0; i < b.N; i++ {
+		nb := 0
+		var movesiter moveiterator
+		move := movesiter.Begin(board, word("supermans"))
+		for move != nil {
+			nb++
+			move = movesiter.Next()
+		}
+		if nb != 11524 {
+			b.Error("Something changed in the algorithm", nb)
+		}
+	}
+}
+
+func BenchmarkNewMoveIterator(b *testing.B) {
+	board := make_board("supermansmnsupeumnesruans")
+	for i := 0; i < b.N; i++ {
+		nb := 1
+		move := board.first(word("supermans"))
+		for board.next(move) {
+			nb++
+		}
+		if nb != 11520 {
+			b.Errorf("Something changed in the algorithm 11520 != %d", nb)
+		}
 	}
 }

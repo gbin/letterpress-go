@@ -6,10 +6,15 @@ import (
 	"io"
 	"log"
 	"os"
-
+	"runtime"
 	"sort"
 )
 
+var MODULO = runtime.NumCPU()
+
+func init() {
+	runtime.GOMAXPROCS(MODULO)
+}
 func ReadWords() (wordlist, error) {
 	f, err := os.Open("word_cache.txt")
 	if err != nil {
@@ -230,18 +235,20 @@ type worditerator struct {
 	game          *Game
 	gamestate     *GameState
 	current_index int
+	moduloOffset  int
 }
 
-func (wi *worditerator) Begin(game *Game, gamestate *GameState) *signedword {
-	wi.game = game
-	wi.gamestate = gamestate
-	return wi.Next()
+func NewWordIterator(game *Game, gamestate *GameState, moduloOffset int) worditerator {
+	return worditerator{game, gamestate, 0, moduloOffset}
 }
 
 func (wi *worditerator) Next() *signedword {
 already_played:
 	for _, psw := range wi.game.possible_words[wi.current_index:] {
 		wi.current_index += 1
+		if wi.moduloOffset != -1 && (wi.current_index%MODULO) != wi.moduloOffset {
+			continue
+		}
 		for _, signed_played_word := range wi.gamestate.played_moves {
 			if psw.Equal(&signed_played_word) {
 				continue already_played

@@ -66,13 +66,14 @@ func TestWordGen(t *testing.T) {
 	sw1, sw2, sw3 := game.possible_words[0], game.possible_words[1], game.possible_words[2]
 
 	state.played_moves = append(state.played_moves, sw2)
-	var wi worditerator
-	first := wi.Begin(game, &state)
+	wi := NewWordIterator(game, &state, -1)
+	first := wi.Next()
 	if !first.Equal(&sw1) {
 		t.Errorf("Should have been ", sw1.word)
 	}
 	state.played_moves = append(state.played_moves, sw1)
-	first = wi.Begin(game, &state)
+	wi = NewWordIterator(game, &state, -1)
+	first = wi.Next()
 	if !first.Equal(&sw3) {
 		t.Errorf("Should have been ", sw3.word)
 	}
