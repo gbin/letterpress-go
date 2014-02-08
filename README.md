@@ -6,18 +6,27 @@ This is a simple min-max algorithm for the game of letterpress (or wordstrike un
 It is an experiment I ran to see how well a computer can play at the game.
 
 I have only one requirement for the people who wants to use it :
-Always tell your opponent that you are using this as it seriously spoils the fun.
+Don't be an a** and always tell your opponent that you are using this as it seriously spoils the fun.
 
 How to compile it ?
-You need a golang installation (see http://www.golang.org)
-Clone it in your go/src directory
-cd letterpress-go
-Then build it as a normal go program
+-------------------
+
+You need a golang installation (see http://www.golang.org) with $GOPATH correctly set.
+
+```bash
+# clone it to your local go src folder
+git clone https://github.com/gbin/letterpress-go.git $GOPATH/src
+cd $GOPATH/src/letterpress-go
 go build
+# an executable called letterpress-go should be there.
+```
 
 How to use it ?
+---------------
 
-letterpress-go [input-file]
+```bash
+./letterpress-go [input-file]
+```
 
 The input format is a text file with a very rigid format :
 1. the first 5 lines are the letters of the game
@@ -26,8 +35,8 @@ The input format is a text file with a very rigid format :
 4. one blank line
 5. the list of words already played
 
-For example (copy paste starting from the next line):
-itcla
+For example (you can copy paste it as a base):
+```itcla
 nkfln
 edkyu
 geeez
@@ -43,4 +52,4 @@ unsticked
 gesellschaften
 knuckeheads
 calflike
-
+```
