@@ -12,6 +12,7 @@ How to compile it ?
 -------------------
 
 You need a golang installation (see http://www.golang.org) with $GOPATH correctly set.
+And you need a 256 color terminal. 
 
 ```bash
 # clone it to your local go src folder
@@ -28,11 +29,16 @@ How to use it ?
 ./letterpress-go [input-file]
 ```
 
-The input format is a text file with a very rigid format :
+The input format is a text file with a very rigid format:
+
 1. the first 5 lines are the letters of the game
+
 2. one blank line
+
 3. the next five lines are the color mask : [space] for white, r for red, b for blue
+
 4. one blank line
+
 5. the list of words already played
 
 For example (you can copy paste it as a base):
