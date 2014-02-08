@@ -24,10 +24,9 @@ func main() {
 		log.Fatalf("Could not initialize the game %v", err)
 	}
 	best := game.search(2) // at depth 1 and empty game, it should simply be the first proposal
-	fmt.Println(game.possible_words[:50])
 	fmt.Println(game.String())
 	fmt.Println(best.move)
-	game.state.play(best.move, best.word, BLUE)
+	game.state.play(best.move[0], best.word[0], BLUE)
 	fmt.Println(game.showMove(best.move))
 	fmt.Println("Eval: ", best.eval)
 	fmt.Println("Total moves analyzed: ", best.nbMoves)

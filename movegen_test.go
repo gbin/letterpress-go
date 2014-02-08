@@ -49,17 +49,12 @@ func TestFindSubWords(t *testing.T) {
 
 func TestFindMovesForWord(t *testing.T) {
 	board := make_board("supermansxxxxxxxxxxxxxxxx")
-	var movesiter moveiterator
-	pos1 := movesiter.Begin(board, word("supermans"))
-	if pos1[0] != 0 || pos1[1] != 1 || pos1[8] != 8 {
-		t.Errorf("it should not be the position")
+	pos := board.first(word("supermans"))
+	if pos[0] != 0 || pos[1] != 1 || pos[8] != 8 {
+		t.Errorf("it should not be the position %v", pos)
 	}
-	pos2 := movesiter.Next()
-	if pos2[0] != 8 || pos1[1] != 1 || pos1[8] != 0 {
-		t.Errorf("it should not be the position")
-	}
-	pos3 := movesiter.Next()
-	if pos3 != nil {
+
+	if board.next(pos) {
 		t.Errorf("it should stop")
 
 	}
@@ -76,21 +71,6 @@ func TestSignatureCalculation(t *testing.T) {
 
 	if calculate_word_signature(word("eeees")) != 48 {
 		t.Errorf("eeees signature should be 48")
-	}
-
-}
-
-func TestFind_chr_indices(t *testing.T) {
-	board := make_board("supermans                ")
-	result := board.find_chr_indices('s')
-	if result[0] != 0 {
-		t.Errorf("should find one at the beginning")
-	}
-	if result[1] != 8 {
-		t.Errorf("should find one at 8")
-	}
-	if len(result) != 2 {
-		t.Errorf("should be only 2 results")
 	}
 }
 
@@ -111,7 +91,7 @@ func same(t *testing.T, got, want move) {
 	}
 }
 
-func TestWordIterator(t *testing.T) {
+func TestNewMoveIterator(t *testing.T) {
 	//                   0123456789012345678901234
 	board := make_board("supermansmnsupeumnesruans")
 
@@ -139,22 +119,6 @@ func TestWordIterator(t *testing.T) {
 			t.Errorf("Should have been true")
 		}
 		same(t, got, want)
-	}
-}
-
-func BenchmarkMoveIterator(b *testing.B) {
-	board := make_board("supermansmnsupeumnesruans")
-	for i := 0; i < b.N; i++ {
-		nb := 0
-		var movesiter moveiterator
-		move := movesiter.Begin(board, word("supermans"))
-		for move != nil {
-			nb++
-			move = movesiter.Next()
-		}
-		if nb != 11524 {
-			b.Error("Something changed in the algorithm", nb)
-		}
 	}
 }
 

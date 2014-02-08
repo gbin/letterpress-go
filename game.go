@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-var MODULO = runtime.NumCPU()
+var MODULO = 1 //runtime.NumCPU()
 
 func init() {
 	runtime.GOMAXPROCS(MODULO)
@@ -45,7 +45,7 @@ func (s signedword) String() string {
 type Game struct {
 	board          *board
 	state          GameState
-	possible_words []signedword
+	possible_words []*signedword
 }
 
 func (g *Game) String() string {
@@ -80,11 +80,11 @@ func (g *Game) String() string {
 
 type GameState struct {
 	mask         mask
-	played_moves []signedword
+	played_moves []*signedword
 }
 
 type BestmatchSignedWords struct {
-	possible_words  []signedword
+	possible_words  []*signedword
 	all_in_criteria word // subset which is best if they all match (end of game)
 	criteria        word // the next best subset of lettes to best match on
 }
@@ -174,10 +174,10 @@ func Make_empty_game(board_str string, mask_str string, played_moves_str []strin
 	}
 	for _, word := range filter_out_subwords(all_possible_moves(game.board, possible_moves)) {
 		sw := signedword{word, calculate_word_signature(word)}
-		game.possible_words = append(game.possible_words, sw)
+		game.possible_words = append(game.possible_words, &sw)
 		fmt.Printf("word %q ", string(word))
 		if inStrings(string(word), played_moves_str) {
-			game.state.played_moves = append(game.state.played_moves, sw)
+			game.state.played_moves = append(game.state.played_moves, &sw)
 		}
 	}
 	return game, err
@@ -192,6 +192,9 @@ func (g *Game) sort_possible_words_by_letter_subsets(allIn, criteria word) {
 }
 
 func (sw *signedword) Equal(osw *signedword) bool {
+	if sw == osw { // some pointer doh
+		return true
+	}
 	if sw.signature != osw.signature {
 		return false
 	}
@@ -235,26 +238,23 @@ type worditerator struct {
 	game          *Game
 	gamestate     *GameState
 	current_index int
-	moduloOffset  int
 }
 
-func NewWordIterator(game *Game, gamestate *GameState, moduloOffset int) worditerator {
-	return worditerator{game, gamestate, 0, moduloOffset}
+func NewWordIterator(game *Game, gamestate *GameState) worditerator {
+	return worditerator{game, gamestate, 0}
 }
 
 func (wi *worditerator) Next() *signedword {
 already_played:
-	for _, psw := range wi.game.possible_words[wi.current_index:] {
-		wi.current_index += 1
-		if wi.moduloOffset != -1 && (wi.current_index%MODULO) != wi.moduloOffset {
-			continue
-		}
+	for wi.current_index < len(wi.game.possible_words) {
+		psw := wi.game.possible_words[wi.current_index]
+		wi.current_index++
 		for _, signed_played_word := range wi.gamestate.played_moves {
-			if psw.Equal(&signed_played_word) {
+			if psw == signed_played_word {
 				continue already_played
 			}
 		}
-		return &psw
+		return psw
 	}
 	return nil
 }
@@ -307,48 +307,51 @@ func (state *GameState) play(move move, signed_word *signedword, color byte) {
 			state.mask[index] = color
 		}
 	}
-	state.played_moves = append(state.played_moves, *signed_word)
+	state.played_moves = append(state.played_moves, signed_word)
 }
 
-func (g *Game) showMove(m move) string {
-	result := "\x1b[0m\x1b[30m"
-	for i, color := range g.state.mask {
-		if i%5 == 0 {
-			result += "\n"
-		}
-		intense := color != EMPTY && g.state.mask.vicinity_same_color(color, i)
-		switch color {
-		case RED:
-			if intense {
-				result += "\x1b[48;5;196m"
-			} else {
-				result += "\x1b[48;5;203m"
+func (g *Game) showMove(moves []move) string {
+	var result string
+	for _, m := range moves {
+		result += "\x1b[0m\x1b[30m"
+		for i, color := range g.state.mask {
+			if i%5 == 0 {
+				result += "\n"
 			}
-		case BLUE:
-			if intense {
-				result += "\x1b[48;5;21m"
-			} else {
-				result += "\x1b[48;5;62m"
+			intense := color != EMPTY && g.state.mask.vicinity_same_color(color, i)
+			switch color {
+			case RED:
+				if intense {
+					result += "\x1b[48;5;196m"
+				} else {
+					result += "\x1b[48;5;203m"
+				}
+			case BLUE:
+				if intense {
+					result += "\x1b[48;5;21m"
+				} else {
+					result += "\x1b[48;5;62m"
+				}
+			default:
+				result += "\x1b[48;5;248m"
 			}
-		default:
-			result += "\x1b[48;5;248m"
-		}
 
-		inMove := false
-		for _, index := range m {
-			if index == i {
-				inMove = true
-				break
+			inMove := false
+			for _, index := range m {
+				if index == i {
+					inMove = true
+					break
+				}
 			}
+			if inMove {
+				result += "\x1b[37m"
+			} else {
+				result += "\x1b[30m"
+			}
+			result += string(g.board[i])
 		}
-		if inMove {
-			result += "\x1b[37m"
-		} else {
-			result += "\x1b[30m"
-		}
-		result += string(g.board[i])
+		result += "\x1b[0m\n"
+		result += fmt.Sprintf("%v", g.state.played_moves)
 	}
-	result += "\x1b[0m\n"
-	result += fmt.Sprintf("%v", g.state.played_moves)
 	return result
 }

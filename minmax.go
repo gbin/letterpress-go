@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 const INFINITY = 1000000
 const MAX_WORD_CUTOFF = INFINITY
@@ -12,155 +9,103 @@ var depth0_alpha int
 
 type variation struct {
 	eval    int
-	move    []int
-	word    *signedword
+	move    []move
+	word    []*signedword
 	nbMoves int
 }
 
-func (game *Game) max_value(state *GameState, alpha int, beta int, depth int, max_depth int, modulo int) variation {
-	best := variation{eval: -INFINITY}
+func (game *Game) max_value(variation *variation, state *GameState, alpha int, beta int, depth int, max_depth int) int {
 	if depth >= max_depth {
-		best.eval = state.evaluate()
-		return best
+		return state.evaluate()
+	}
+	if state.is_finished() {
+		for i := depth; i < max_depth; i++ {
+			variation.move[i] = nil
+			variation.word[i] = nil
+		}
+		return state.evaluate()
 	}
 
-	var last_nb_moves int
-	timestampFloat := time.Now().UnixNano()
-	nb_words := 0
-	wi := NewWordIterator(game, state, modulo)
+	max_eval := -INFINITY
+	wi := NewWordIterator(game, state)
 
 	for current_signedword := wi.Next(); current_signedword != nil; current_signedword = wi.Next() {
-		nb_words++
-		if depth > 1 && nb_words > 5 {
-			return best
-		}
-		var current_move []int
-		var mi moveiterator
-		for current_move = mi.Begin(game.board, current_signedword.word); current_move != nil; current_move = mi.Next() {
-			var eval, new_nb_moves int
+		current_move := game.board.first(current_signedword.word)
+		for {
 			new_state := *state
 			new_state.play(current_move, current_signedword, BLUE)
 
-			if new_state.is_finished() {
-				eval = new_state.evaluate()
-				new_nb_moves = 1
-			} else {
-				min_variation := game.min_value(&new_state, alpha, beta, depth+1, max_depth)
-				eval = min_variation.eval
-				new_nb_moves = min_variation.nbMoves
-			}
-			best.nbMoves += new_nb_moves + 1
-			if best.eval < eval {
-				best.eval = eval
-				best.move = make([]int, len(current_move))
-				for index, chr := range current_move {
-					best.move[index] = chr
+			eval := game.min_value(variation, &new_state, alpha, beta, depth+1, max_depth)
+			if max_eval < eval {
+				max_eval = eval
+				if alpha < max_eval {
+					alpha = max_eval
+					if alpha >= beta { // alpha/beta cutoff
+						return max_eval
+					}
 				}
-				best.word = current_signedword
-			}
-			if alpha < best.eval {
-				alpha = best.eval
-			}
-			if depth == 0 {
-				if alpha < depth0_alpha {
-					alpha = depth0_alpha
-				}
-				if depth0_alpha < alpha {
-					depth0_alpha = alpha
+				bestmove := make([]int, len(current_move))
+				copy(bestmove, current_move)
+				variation.move[depth] = bestmove
+				variation.word[depth] = current_signedword
+				if depth == 0 {
+					fmt.Printf("Eval=%d Variation=%v moves=%v\n", max_eval, variation.word, variation.move)
 				}
 			}
-			if alpha >= beta { // alpha/beta cutoff
-				return best
+			if !game.board.next(current_move) {
+				break
 			}
 		}
-		if depth == 0 {
-			new_ts := time.Now().UnixNano()
-			word_per_seconds := (int64(best.nbMoves-last_nb_moves) * 1000000000) / (new_ts - timestampFloat)
-			fmt.Println(modulo, "Best Eval", best.eval, "Best Word", best.word.word, "move", best.move, "     |  Current word", string(current_signedword.word), best.nbMoves, "Speed ", word_per_seconds)
-			last_nb_moves = best.nbMoves
-		}
-
 	}
-	return best
+	return max_eval
 }
 
-func (game *Game) min_value(state *GameState, alpha int, beta int, depth int, max_depth int) variation {
-	best := variation{eval: INFINITY}
+func (game *Game) min_value(variation *variation, state *GameState, alpha int, beta int, depth int, max_depth int) int {
 	if depth >= max_depth {
-		best.eval = state.evaluate()
-		return best
+		return state.evaluate()
 	}
-
-	var nb_words int
-	wi := NewWordIterator(game, state, -1)
+	if state.is_finished() {
+		for i := depth; i < max_depth; i++ {
+			variation.move[i] = nil
+			variation.word[i] = nil
+		}
+		return state.evaluate()
+	}
+	min_eval := INFINITY
+	wi := NewWordIterator(game, state)
 
 	for current_signedword := wi.Next(); current_signedword != nil; current_signedword = wi.Next() {
-		nb_words++
-		if depth > 1 && nb_words > 1 /* len(game.possible_words)/depth*/ {
-			return best
-		}
-
-		var current_move []int
-		var mi moveiterator
-		for current_move = mi.Begin(game.board, current_signedword.word); current_move != nil; current_move = mi.Next() {
-			var eval, new_nb_moves int
+		current_move := game.board.first(current_signedword.word)
+		for {
 			new_state := *state
 			new_state.play(current_move, current_signedword, RED)
-			if new_state.is_finished() {
-				eval = new_state.evaluate()
-				new_nb_moves = 1
-			} else {
-				max_variation := game.max_value(&new_state, alpha, beta, depth+1, max_depth, -1)
-				eval = max_variation.eval
-				new_nb_moves = max_variation.nbMoves
-			}
-			best.nbMoves += new_nb_moves + 1
-			if best.eval > eval {
-				best.eval = eval
-				best.move = make([]int, len(current_move))
-				for index, chr := range current_move {
-					best.move[index] = chr
+			eval := game.max_value(variation, &new_state, alpha, beta, depth+1, max_depth)
+			if min_eval > eval {
+				min_eval = eval
+				if beta > min_eval {
+					beta = min_eval
+					if beta <= alpha { // alpha/beta cutoff
+						return min_eval
+					}
 				}
-				best.word = current_signedword
+				bestmove := make([]int, len(current_move))
+				copy(bestmove, current_move)
+				variation.move[depth] = bestmove
+				variation.word[depth] = current_signedword
 			}
-			if beta > best.eval {
-				beta = best.eval
+			if !game.board.next(current_move) {
+				break
 			}
-			if beta <= alpha { // alpha/beta cutoff
-				return best
-			}
-
 		}
 
 	}
-	return best
-}
-
-func (game *Game) partition(result chan variation, max_depth int, moduloOffset int) {
-	localGS := game.state
-	result <- game.max_value(&localGS, -INFINITY, INFINITY, 0, max_depth, moduloOffset)
+	return min_eval
 }
 
 func (game *Game) search(max_depth int) variation {
-	var best variation
-	depth0_alpha = -INFINITY
-	best.eval = -INFINITY
+	best := variation{move: make([]move, max_depth), word: make([]*signedword, max_depth)}
 	fmt.Printf("Start \n%v\n", game)
 	game.sort_possible_words_by_letter_subsets(game.unused_letterset(), game.interesting_letterset(BLUE))
-
-	result := make(chan variation, MODULO)
-	for i := 0; i < MODULO; i++ {
-		go game.partition(result, max_depth, i)
-	}
-
-	for i := 0; i < MODULO; i++ {
-		v := <-result
-		fmt.Println("-- PARTIAL RESULT --\nBest word:", string(v.word.word), "Eval:", v.eval)
-		if v.eval > best.eval {
-			best = v
-		}
-	}
-
-	fmt.Println("-- RESULT --\nBest word:", string(best.word.word), "Eval:", best.eval)
+	best.eval = game.max_value(&best, &game.state, -INFINITY, INFINITY, 0, max_depth)
 	return best
 }

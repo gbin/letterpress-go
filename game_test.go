@@ -61,20 +61,20 @@ func TestEvaluation(t *testing.T) {
 func TestWordGen(t *testing.T) {
 	game, _ := Make_empty_game("abcdeabcdeabcdeabcdeabcjy", "", empty)
 	var state GameState
-	state.played_moves = make([]signedword, 0)
+	state.played_moves = make([]*signedword, 0)
 
 	sw1, sw2, sw3 := game.possible_words[0], game.possible_words[1], game.possible_words[2]
 
 	state.played_moves = append(state.played_moves, sw2)
-	wi := NewWordIterator(game, &state, -1)
+	wi := NewWordIterator(game, &state)
 	first := wi.Next()
-	if !first.Equal(&sw1) {
+	if !first.Equal(sw1) {
 		t.Errorf("Should have been ", sw1.word)
 	}
 	state.played_moves = append(state.played_moves, sw1)
-	wi = NewWordIterator(game, &state, -1)
+	wi = NewWordIterator(game, &state)
 	first = wi.Next()
-	if !first.Equal(&sw3) {
+	if !first.Equal(sw3) {
 		t.Errorf("Should have been ", sw3.word)
 	}
 
@@ -98,7 +98,7 @@ fougasses
 house
 `
 
-func inPlayed(w string, sw []signedword) bool {
+func inPlayed(w string, sw []*signedword) bool {
 	for _, s := range sw {
 		if string(s.word) == w {
 			return true
