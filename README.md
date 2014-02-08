@@ -1,7 +1,7 @@
 letterpress-go
 ==============
 
-This is a simple min-max algorithm for the game of letterpress (or wordstrike under android).
+This is a simple min-max algorithm for the game of letterpress (or spell strike under android).
 
 It is an experiment I ran to see how well a computer can play at the game.
 
@@ -59,3 +59,4 @@ gesellschaften
 knuckeheads
 calflike
 ```
+Note: it has the wordlist of spell strike so some words might not exist under letterpress itself.
